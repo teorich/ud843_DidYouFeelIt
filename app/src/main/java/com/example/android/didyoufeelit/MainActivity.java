@@ -15,6 +15,7 @@
  */
 package com.example.android.didyoufeelit;
 
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.widget.TextView;
@@ -34,11 +35,13 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Perform the HTTP request for earthquake data and process the response.
-        Event earthquake = Utils.fetchEarthquakeData(USGS_REQUEST_URL);
+        // Create an {@link AsyncTask} to perform the HTTP request to the given URL
+        // on a background thread. When the result is received on the main UI thread,
+        // then update the UI.
 
-        // Update the information displayed to the user.
-        updateUi(earthquake);
+        EarthquakeAsyncTask task = new EarthquakeAsyncTask();
+        task.execute(USGS_REQUEST_URL);
+
     }
 
     /**
@@ -53,5 +56,35 @@ public class MainActivity extends AppCompatActivity {
 
         TextView magnitudeTextView = (TextView) findViewById(R.id.perceived_magnitude);
         magnitudeTextView.setText(earthquake.perceivedStrength);
+    }
+
+    /**
+     * {@link AsyncTask} to perform the network request on a background thread, and then
+     * update the UI with the first earthquake in the response.
+     */
+
+    private class EarthquakeAsyncTask extends AsyncTask<String,Void,Event> {
+
+        /**
+         * This method is invoked (or called) on a background thread, so we can perform
+         * long-running operations like making a network request.
+         *
+         * It is NOT okay to update the UI from a background thread, so we just return an
+         * {@link Event} object as the result.
+         */
+
+        @Override
+        protected Event doInBackground(String... urls) {
+
+            // Perform the HTTP request for earthquake data and process the response.
+            Event result = Utils.fetchEarthquakeData(urls[0]);
+
+            return result;
+        }
+
+        @Override
+        protected void onPostExecute(Event result) {
+            updateUi(result);
+        }
     }
 }
